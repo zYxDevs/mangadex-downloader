@@ -22,8 +22,7 @@ _deprecated_opts = {
 
 def _check_deprecations(log, args):
     for arg, msg in _deprecated_opts.items():
-        deprecated = getattr(args, arg)
-        if deprecated:
+        if deprecated := getattr(args, arg):
             log.warning(msg)
 
 def _main(argv):
@@ -65,17 +64,15 @@ def _main(argv):
         # Cleaning up
         close_network_object()
 
-    # library error
     except MangaDexException as e:
         err_msg = str(e)
         return parser, 1, err_msg
-    
-    # Other exception
+
     except Exception as e:
-        log.error("Unhandled exception, %s: %s" % (e.__class__.__name__, str(e)))
+        log.error(f"Unhandled exception, {e.__class__.__name__}: {str(e)}")
         traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
         return parser, 1, None
-    
+
     else:
         # We're done here
         return parser, 0, None

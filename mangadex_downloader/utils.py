@@ -27,7 +27,7 @@ def validate_url(url):
     match = re_url.search(url)
     if match is None:
         raise InvalidURL('\"%s\" is not valid MangaDex URL' % url)
-    return match.group(1)
+    return match[1]
 
 def validate_legacy_url(url):
     """Validate old mangadex url and return the id"""
@@ -35,17 +35,14 @@ def validate_legacy_url(url):
     match = re_url.search(url)
     if match is None:
         raise InvalidURL('\"%s\" is not valid MangaDex URL' % url)
-    return match.group('id')
+    return match['id']
 
 def validate_group_url(url):
     """Validate group mangadex url and return the id"""
     if url is None:
         return
     all_group = url.lower().strip() == "all"
-    if not all_group:
-        return validate_url(url)
-    else:
-        return "all"
+    return "all" if all_group else validate_url(url)
 
 def download(url, file, progress_bar=True, replace=False, use_requests=False, **headers):
     """Shortcut for :class:`FileDownloader`"""
@@ -61,41 +58,36 @@ def download(url, file, progress_bar=True, replace=False, use_requests=False, **
     downloader.cleanup()
 
 def write_details(manga, path):
-    data = {}
-    data['title'] = manga.title
-
     # Parse authors
-    authors = ""
-    for index, author in enumerate(manga.authors):
-        if index < (len(manga.authors) - 1):
-            authors += author + ","
-        else:
-            # If this is last index, append author without comma
-            authors += author
-    data['author'] = authors
+    authors = "".join(
+        f"{author}," if index < (len(manga.authors) - 1) else author
+        for index, author in enumerate(manga.authors)
+    )
 
     # Parse artists
-    artists = ""
-    for index, artist in enumerate(manga.artists):
-        if index < (len(manga.artists) - 1):
-            artists += artist + ","
-        else:
-            # If this is last index, append artist without comma
-            artists += artist
-    data['artist'] = artists
+    artists = "".join(
+        f"{artist}," if index < (len(manga.artists) - 1) else artist
+        for index, artist in enumerate(manga.artists)
+    )
 
-    data['description'] = manga.description
-    data['genre'] = manga.genres
-    data['status'] = MangaStatus[manga.status].value
-    data['_status values'] = [
-        "0 = Unknown",
-        "1 = Ongoing",
-        "2 = Completed",
-        "3 = Licensed",
-        "4 = Publishing finished",
-        "5 = Cancelled",
-        "6 = On hiatus"
-    ]
+    data = {
+        'title': manga.title,
+        'author': authors,
+        'artist': artists,
+        'description': manga.description,
+        'genre': manga.genres,
+        'status': MangaStatus[manga.status].value,
+        '_status values': [
+            "0 = Unknown",
+            "1 = Ongoing",
+            "2 = Completed",
+            "3 = Licensed",
+            "4 = Publishing finished",
+            "5 = Cancelled",
+            "6 = On hiatus",
+        ],
+    }
+
     with open(path, 'w') as writer:
         writer.write(json.dumps(data))
 
@@ -126,11 +118,7 @@ class File:
     Parameter ``file`` can take IO (must has ``name`` object) or str
     """
     def __init__(self, file):
-        if hasattr(file, 'name'):
-            full_name = file.name
-        else:
-            full_name = file
-    
+        full_name = file.name if hasattr(file, 'name') else file
         name, ext = os.path.splitext(full_name)
 
         self.name = name
@@ -174,9 +162,9 @@ def comma_separated_text(array):
 
     # Add the rest of items
     for item in array:
-        text += ', ' + item
+        text += f', {item}'
 
     # Closing square bracket
     text += ']'
-    
+
     return text

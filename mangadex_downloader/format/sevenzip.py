@@ -44,15 +44,15 @@ class SevenZip(BaseFormat):
             chap_extended_name = chap_class.get_name()
 
             # Fetching chapter images
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             chapter_path = create_chapter_folder(base_path, chap_name)
 
-            chapter_zip_path = base_path / (chap_name + '.cb7')
+            chapter_zip_path = base_path / f'{chap_name}.cb7'
             if chapter_zip_path.exists() and replace:
                 delete_file(chapter_zip_path)
 
@@ -70,9 +70,7 @@ class SevenZip(BaseFormat):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (
-                        chap_extended_name, page
-                    ))
+                    log.info(f'Downloading {chap_extended_name} page {page}')
 
                     verified = None
                     if chapter_zip_path.exists():
@@ -115,10 +113,10 @@ class SevenZip(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
@@ -141,10 +139,10 @@ class SevenZip(BaseFormat):
 
                         count.increase()
                         continue
-                
+
                 if not error:
                     break
-            
+
             # Remove original chapter folder
             shutil.rmtree(chapter_path, ignore_errors=True)
 
@@ -196,7 +194,7 @@ class SevenZipVolume(SevenZip):
             # Create volume folder
             volume_path = create_chapter_folder(base_path, volume)
 
-            volume_zip_path = base_path / (volume + '.cb7')
+            volume_zip_path = base_path / f'{volume}.cb7'
             if volume_zip_path.exists() and replace:
                 delete_file(volume_zip_path)
 
@@ -216,7 +214,7 @@ class SevenZipVolume(SevenZip):
                 chap_name = chap_class.get_name()
 
                 # Insert "start of the chapter" image
-                img_name = count.get() + '.png'
+                img_name = f'{count.get()}.png'
 
                 # Make sure we never duplicated it
                 write_start_image = True
@@ -233,10 +231,10 @@ class SevenZipVolume(SevenZip):
                 count.increase()
 
                 # Fetching chapter images
-                log.info('Getting %s from chapter %s' % (
-                    'compressed images' if compressed_image else 'images',
-                    chap
-                ))
+                log.info(
+                    f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                )
+
                 images.fetch()
 
                 while True:
@@ -249,7 +247,7 @@ class SevenZipVolume(SevenZip):
 
                         img_path = volume_path / img_name
 
-                        log.info('Downloading %s page %s' % (chap_name, page))
+                        log.info(f'Downloading {chap_name} page {page}')
 
                         verified = None
                         if volume_zip_path.exists():
@@ -292,26 +290,26 @@ class SevenZipVolume(SevenZip):
                         # Fetch the new one, and start re-downloading
                         if not success:
                             log.error('One of MangaDex network are having problem, re-fetching the images...')
-                            log.info('Getting %s from chapter %s' % (
-                                'compressed images' if compressed_image else 'images',
-                                chap
-                            ))
+                            log.info(
+                                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                            )
+
                             error = True
                             images.fetch()
                             break
                         else:
                             # Write it to zipfile
                             wrap = lambda: write_image(img_path, img_name)
-                            
+
                             # KeyboardInterrupt safe
                             worker.submit(wrap)
-                            
+
                             count.increase()
                             continue
-                    
+
                     if not error:
                         break
-                
+
             # Remove original chapter folder
             shutil.rmtree(volume_path, ignore_errors=True)
 
@@ -350,10 +348,11 @@ class SevenZipSingle(SevenZip):
 
         # Construct .cbz filename from first and last chapter
         first_chapter = cache[0][0]
-        last_chapter = cache[len(cache) - 1][0]
+        last_chapter = cache[-1][0]
         manga_zip_path = base_path / sanitize_filename(
-            first_chapter.simple_name + " - " + last_chapter.simple_name + '.cb7'
+            f"{first_chapter.simple_name} - {last_chapter.simple_name}.cb7"
         )
+
         if manga_zip_path.exists() and replace:
             delete_file(manga_zip_path)
 
@@ -376,7 +375,7 @@ class SevenZipSingle(SevenZip):
             chapter_path = create_chapter_folder(base_path, chap_name)
 
             # Insert "start of the chapter" image
-            img_name = count.get() + '.png'
+            img_name = f'{count.get()}.png'
 
             # Make sure we never duplicated it
             write_start_image = True
@@ -392,10 +391,10 @@ class SevenZipSingle(SevenZip):
 
             count.increase()
 
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             while True:
@@ -408,7 +407,7 @@ class SevenZipSingle(SevenZip):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (chap_name, page))
+                    log.info(f'Downloading {chap_name} page {page}')
 
                     verified = None
                     if manga_zip_path.exists():
@@ -451,23 +450,23 @@ class SevenZipSingle(SevenZip):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
                     else:
                         # Write it to zipfile
                         wrap = lambda: write_image(img_path, img_name)
-                        
+
                         # KeyboardInterrupt safe
                         worker.submit(wrap)
-                        
+
                         count.increase()
                         continue
-                
+
                 if not error:
                     break            
 

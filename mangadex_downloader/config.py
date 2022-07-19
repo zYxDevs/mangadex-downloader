@@ -22,24 +22,23 @@ class ConfigTypeError(MangaDexException):
 
 # Utilities
 def _validate_bool(val):
-    if isinstance(val, str):
-        value = val.strip().lower()
-
-        # Is it 1 or 0 ?
-        try:
-            return bool(int(value))
-        except ValueError:
-            pass
-
-        # This is dumb
-        if value == "true":
-            return True
-        elif value == "false":
-            return False
-        else:
-            raise ConfigTypeError(f"'{val}' is not valid boolean value")
-    else:
+    if not isinstance(val, str):
         return bool(val)
+    value = val.strip().lower()
+
+    # Is it 1 or 0 ?
+    try:
+        return bool(int(value))
+    except ValueError:
+        pass
+
+    # This is dumb
+    if value == "true":
+        return True
+    elif value == "false":
+        return False
+    else:
+        raise ConfigTypeError(f"'{val}' is not valid boolean value")
 
 def _validate_language(val):
     lang = get_language(val)
@@ -48,7 +47,7 @@ def _validate_language(val):
 def _validate_cover(val):
     if val not in valid_cover_types:
         raise ConfigTypeError(f"'{val}' is not valid cover type")
-    
+
     return val
 
 def _validate_format(val):
@@ -167,7 +166,7 @@ class _Config:
             # useful for passing default arguments in argparse
             if self._data is None:
                 self._write_default()
-            
+
             return
 
         with self._lock:
@@ -185,18 +184,18 @@ class _Config:
                 except json.JSONDecodeError as e:
                     err = e
                     log.error(
-                        f'Failed to decode json data from config file = {self.path.resolve()} ' \
-                        f'reason: {e}, retrying... (attempt: {attempt})'
+                        f'Failed to decode json data from config file = {self.path.resolve()} reason: {err}, retrying... (attempt: {attempt})'
                     )
+
                     # If somehow failed to decode JSON data, delete it and try it again
                     self.path.unlink(missing_ok=True)
                     continue
                 except Exception as e:
                     err = e
                     log.error(
-                        f'Failed to load json data from config file = {self.path.resolve()} ' \
-                        f'reason: {e}, retrying... (attempt: {attempt})'
+                        f'Failed to load json data from config file = {self.path.resolve()} reason: {err}, retrying... (attempt: {attempt})'
                     )
+
                 else:
                     success = True
                     break
@@ -275,7 +274,7 @@ class ConfigProxy:
         except Exception as e:
             # Provide more details about error
             # Which config triggered this
-            err = f"{name}: " + str(e)
+            err = f"{name}: {str(e)}"
             raise ConfigTypeError(err) from None
 
         _conf.write(name, val)
@@ -410,8 +409,6 @@ class AuthCacheManager:
                     self.path.unlink(missing_ok=True)
                 except Exception as e:
                     log.debug(f"Failed to delete auth cache file, reason: {e}")
-                    pass
-
         if not success:
             exc = MangaDexException(
                 f"Failed to load auth cache file ({self.path}), reason: {err}" \
@@ -465,7 +462,7 @@ class AuthCacheManager:
                 # exp_time must have at least above 30 seconds (30 seconds for re-login)
                 exp_time = (exp - now).total_seconds()
 
-                if (exp_time - 30) <= 0:
+                if exp_time <= 30:
                     # The expiration time is less than 30 seconds
                     # Mark is as expired
                     self._reset_session_token()
@@ -510,10 +507,9 @@ class AuthCacheManager:
 
             if exp > now:
                 return token
-            else:
-                # Token is expired
-                self._reset_refresh_token()
-                return None
+            # Token is expired
+            self._reset_refresh_token()
+            return None
 
     def set_refresh_token(self, token):
         """Write refresh token to cache file

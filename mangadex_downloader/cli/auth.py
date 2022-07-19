@@ -15,35 +15,36 @@ email_regex = r'.{1,}@.{1,}\..{1,}'
 log = logging.getLogger(__name__)
 
 def logout_with_err_handler(args):
-    if args.login:
-        # Make sure that we are really LOGGED IN
-        # To prevent error while logging out
-        try:
-            logged_in = Net.mangadex.check_login()
-        except Exception:
-            logged_in = False
-        
-        if not logged_in:
-            return
+    if not args.login:
+        return
+    # Make sure that we are really LOGGED IN
+    # To prevent error while logging out
+    try:
+        logged_in = Net.mangadex.check_login()
+    except Exception:
+        logged_in = False
 
-        logout_success = False
-        for _ in range(5):
-            attempt = _ + 1
-            try:
-                logout()
-            except HTTPException as e:
-                log.info(
-                    'Logout failed because of MangaDex server error, status code: %s. ' \
-                    'Trying again... (attempt: %s)',
-                    e.response.status_code,
-                    attempt
-                )
-            else:
-                logout_success = True
-                break
-        
-        if not logout_success:
-            log.error("5 attempts logout failed, ignoring...")
+    if not logged_in:
+        return
+
+    logout_success = False
+    for _ in range(5):
+        attempt = _ + 1
+        try:
+            logout()
+        except HTTPException as e:
+            log.info(
+                'Logout failed because of MangaDex server error, status code: %s. ' \
+                'Trying again... (attempt: %s)',
+                e.response.status_code,
+                attempt
+            )
+        else:
+            logout_success = True
+            break
+
+    if not logout_success:
+        log.error("5 attempts logout failed, ignoring...")
 
 def login_with_err_handler(args):
     if not args.login and config.login_cache:
@@ -56,15 +57,8 @@ def login_with_err_handler(args):
         email = None
         username = None
 
-        if not args.login_username:
-            username = input_handle("MangaDex username / email => ")
-        else:
-            username = args.login_username
-        if not args.login_password:
-            password = getpass_handle("MangaDex password => ")
-        else:
-            password = args.login_password
-
+        username = args.login_username or input_handle("MangaDex username / email => ")
+        password = args.login_password or getpass_handle("MangaDex password => ")
         # Ability to login with email
         is_email = re.match(email_regex, username)
         if is_email is not None:

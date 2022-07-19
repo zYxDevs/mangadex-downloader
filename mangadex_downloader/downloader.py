@@ -26,7 +26,7 @@ class BaseDownloader:
 class FileDownloader(BaseDownloader):
     def __init__(self, url, file, progress_bar=True, replace=False, use_requests=False, **headers) -> None:
         self.url = url
-        self.file = str(file) + '.temp'
+        self.file = f'{str(file)}.temp'
         self.real_file = file
         self.progress_bar = progress_bar
         self.replace = replace
@@ -34,16 +34,12 @@ class FileDownloader(BaseDownloader):
 
         # If somehow this is used to sending HTTP requests from another websites (not mangadex)
         # then use requests.Session instead
-        if use_requests:
-            self.session = Net.requests
-        else:
-            self.session = Net.mangadex
-
+        self.session = Net.requests if use_requests else Net.mangadex
         if headers.get('Range') is not None and self._get_file_size(self.file):
             raise ValueError('"Range" header is not supported while in resume state')
 
         self._tqdm = None
-        
+
         self._register_keyboardinterrupt_handler()
     
     def _register_keyboardinterrupt_handler(self):
@@ -64,9 +60,8 @@ class FileDownloader(BaseDownloader):
                 kwargs.setdefault('ncols', 80)
             elif length > 20 and length < 50:
                 kwargs.setdefault('dynamic_ncols', True)
-            # Length desc is more than 40 or 50
             elif length >= 50:
-                desc = desc[:20] + '...'
+                desc = f'{desc[:20]}...'
                 kwargs.setdefault('ncols', 90)
 
             kwargs.setdefault('desc', desc)
@@ -78,16 +73,13 @@ class FileDownloader(BaseDownloader):
             self._tqdm.update(n)
 
     def _get_file_size(self, file):
-        if os.path.exists(file):
-            return os.path.getsize(file)
-        else:
-            return None
+        return os.path.getsize(file) if os.path.exists(file) else None
 
     def _parse_headers(self, initial_sizes):
         headers = self.headers_request or {}
 
         if initial_sizes:
-            headers['Range'] = 'bytes=%s-' % initial_sizes
+            headers['Range'] = f'bytes={initial_sizes}-'
         return headers
 
     def download(self):
@@ -108,10 +100,9 @@ class FileDownloader(BaseDownloader):
             file_sizes += initial_file_sizes
 
         real_file_sizes = self._get_file_size(self.real_file)
-        if real_file_sizes:
-            if file_sizes == real_file_sizes and not self.replace:
-                log.info('File exist and replace is False, cancelling download...')
-                return
+        if real_file_sizes and file_sizes == real_file_sizes and not self.replace:
+            log.info('File exist and replace is False, cancelling download...')
+            return
 
         # Build the progress bar
         self._build_progres_bar(initial_file_sizes, float(file_sizes))
@@ -131,7 +122,7 @@ class FileDownloader(BaseDownloader):
                     break
                 writer.write(chunk)
                 self._update_progress_bar(len(chunk))
-        
+
         # Delete original file if replace is True and real file is exist
         if real_file_sizes and self.replace:
             os.remove(self.real_file)
@@ -174,7 +165,7 @@ class ChapterPageDownloader(FileDownloader):
                 return True
 
             # Report it to MangaDex network if failing
-            if resp.status_code > 200 and not resp.status_code < 400:
+            if resp.status_code > 200 and resp.status_code >= 400:
                 length = len(resp.content)
                 t2 = time.time()
                 self._report(resp, length, round((t2 - t1) * 1000), False)
@@ -188,8 +179,7 @@ class ChapterPageDownloader(FileDownloader):
             if initial_file_sizes:
                 file_sizes += initial_file_sizes
 
-            real_file_sizes = self._get_file_size(self.real_file)
-            if real_file_sizes:
+            if real_file_sizes := self._get_file_size(self.real_file):
                 if file_sizes == real_file_sizes and not self.replace:
                     log.info('File exist and replace is False, cancelling download...')
                     return True
@@ -242,15 +232,14 @@ class ChapterPageDownloader(FileDownloader):
 
         chunk_size = 2 ** 16
 
-        w_fp = open(self.real_file, 'wb')
-        r_fp =  open(self.file, 'rb')
-        while True:
-            data = r_fp.read(chunk_size)
-            if not data:
-                break
-            w_fp.write(data)
+        with open(self.real_file, 'wb') as w_fp:
+            r_fp =  open(self.file, 'rb')
+            while True:
+                if data := r_fp.read(chunk_size):
+                    w_fp.write(data)
 
-        w_fp.close()
+                else:
+                    break
         r_fp.close()
 
         delete_file(self.file)

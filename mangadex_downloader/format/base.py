@@ -34,8 +34,7 @@ class _Worker:
         fut = Future()
         data = [fut, job]
         self._queue.put(data)
-        err = fut.exception()
-        if err:
+        if err := fut.exception():
             raise err
 
     def _shutdown_main(self):
@@ -51,14 +50,13 @@ class _Worker:
             data = self._queue.get()
             if data is None:
                 return
+            fut, job = data
+            try:
+                job()
+            except Exception as err:
+                fut.set_exception(err)
             else:
-                fut, job = data
-                try:
-                    job()
-                except Exception as err:
-                    fut.set_exception(err)
-                else:
-                    fut.set_result(None)
+                fut.set_result(None)
 
 class BaseFormat:
     def __init__(

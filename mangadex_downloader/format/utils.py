@@ -51,7 +51,7 @@ def load_font():
             if 'cannot open resource' in err_msg:
                 # Font not found
                 continue
-            
+
             # Other error
             raise e from None
 
@@ -106,10 +106,7 @@ class NumberWithLeadingZeros:
                 raise ValueError("total must be iterable or int") from None
             total_num = total
         else:
-            total_num = 0
-            for _ in iter_total:
-                total_num += 1
-
+            total_num = sum(1 for _ in iter_total)
         self._total = total_num
         self._num = 0
 
@@ -167,12 +164,8 @@ class FileTracker:
         self.path = base_path
         self.name = name
 
-        if self.path is not None:
-            file = base_path
-        else:
-            file = Path('.')
-
-        file /= ('.' + name + '.tracker.json')
+        file = base_path if self.path is not None else Path('.')
+        file /= f'.{name}.tracker.json'
         self.file = file
 
         self.data = None
@@ -224,11 +217,7 @@ class FileTracker:
 
         files = self.data['files']
 
-        for file in files:
-            if file['name'] == filename:
-                return True
-        
-        return False
+        return any(file['name'] == filename for file in files)
 
     def _write(self, data):
         self.file.write_text(json.dumps(data, indent=4))
@@ -280,9 +269,9 @@ def verify_sha256(server_file, path=None, data=None):
             f'Failed to grab sha256 hash from server_file = {server_file}. ' \
             f'Please report it to {__repository__}/issues'
         )
-    
-    server_hash = match.group('hash')
-    
+
+    server_hash = match['hash']
+
     local_sha256 = hashlib.sha256()
 
     if path:
@@ -294,12 +283,12 @@ def verify_sha256(server_file, path=None, data=None):
         size = 8192
         with open(path, 'rb') as reader:
             while True:
-                data = reader.read(size)
-                if not data:
+                if data := reader.read(size):
+                    local_sha256.update(data)
+                else:
                     break
 
-                local_sha256.update(data)
     elif data:
         local_sha256.update(data)
-    
+
     return local_sha256.hexdigest() == server_hash

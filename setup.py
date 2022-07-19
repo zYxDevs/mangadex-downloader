@@ -13,7 +13,7 @@ _version = re.search(re_version, init_file)
 if _version is None:
   raise RuntimeError("Version is not set")
 
-version = _version.group(1)
+version = _version[1]
 
 # Read description
 re_description = r'__description__ = \"(.{1,})\"'
@@ -22,7 +22,7 @@ _description = re.search(re_description, init_file)
 if _description is None:
   raise RuntimeError("Description is not set")
 
-description = _description.group(1)
+description = _description[1]
 
 requirements = []
 with open('./requirements.txt', 'r') as r:

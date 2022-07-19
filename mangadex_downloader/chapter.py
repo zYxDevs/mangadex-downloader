@@ -51,27 +51,23 @@ class ChapterImages:
         self._low_images = data['chapter']['dataSaver']
 
     def _check_range_page_legacy(self, page, log_info):
-        if self.start_page is not None:
-            if not (page >= self.start_page):
+        if self.start_page is not None and not (page >= self.start_page):
+            if log_info:
+                log.info("Ignoring page %s as \"start_page\" is %s" % (
+                    page,
+                    self.start_page
+                ))
 
-                if log_info:
-                    log.info("Ignoring page %s as \"start_page\" is %s" % (
-                        page,
-                        self.start_page
-                    ))
+            return False
 
-                return False
+        if self.end_page is not None and not (page <= self.end_page):
+            if log_info:
+                log.info("Ignoring page %s as \"end_page\" is %s" % (
+                    page,
+                    self.end_page
+                ))
 
-        if self.end_page is not None:
-            if not (page <= self.end_page):
-
-                if log_info:
-                    log.info("Ignoring page %s as \"end_page\" is %s" % (
-                        page,
-                        self.end_page
-                    ))
-
-                return False
+            return False
 
         return True
 
@@ -151,7 +147,7 @@ class Chapter:
                 manga_id = rel_id
             elif rel_type == 'user':
                 user = User(data=rel)
-        
+
         if manga_id is None:
             raise RuntimeError(f"chapter {_id} has no manga relationship")
 
@@ -208,11 +204,7 @@ class Chapter:
         name = ""
         simpl_name = ""
 
-        if self.title is None:
-            lower_title = ""
-        else:
-            lower_title = self.title.lower()
-
+        lower_title = "" if self.title is None else self.title.lower()
         if 'oneshot' in lower_title:
             self.oneshot = True
             if self.chapter is not None:
@@ -325,19 +317,16 @@ class IteratorChapter:
         self.group = None
         self.all_group = False
         self.legacy_range = legacy_range
-        
-        if _range is not None:
-            self.range = range_mod.compile(_range)
-        else:
-            self.range = _range
 
-        if group and group == "all":
-            self.all_group = True
-        elif group:
-            self.group = self._parse_group(group)
+        self.range = range_mod.compile(_range) if _range is not None else _range
+        if group:
+            if group == "all":
+                self.all_group = True
+            else:
+                self.group = self._parse_group(group)
 
         log_cache = kwargs.get('log_cache')
-        self.log_cache = True if log_cache else False
+        self.log_cache = bool(log_cache)
 
         self._fill_data()
 
@@ -361,7 +350,7 @@ class IteratorChapter:
         # raise error
         if group is None:
             raise GroupNotFound(f"Group or user \"{_id}\" cannot be found")
-        
+
         return group
 
     def _check_range_chapter_legacy(self, chap):
@@ -419,10 +408,12 @@ class IteratorChapter:
         # Some manga has chapters where it has no pages / images inside of it.
         # We need to verify it, to prevent error when downloading the manga.
         if chap.pages == 0:
-            log.warning(f"Chapter {0} from group {1} has no images, ignoring...".format(
-                chap.chapter,
-                chap.groups_name
-            ))
+            log.warning(
+                'Chapter 0 from group 1 has no images, ignoring...'.format(
+                    chap.chapter, chap.groups_name
+                )
+            )
+
             return False
 
         if not self._check_range_chapter(chap):
@@ -436,12 +427,12 @@ class IteratorChapter:
                 group_type = 'scanlator group'
                 group_names = chap.groups_name
                 group_check = False
-            
+
             elif isinstance(self.group, User) and self.group.id != chap.user.id:
                 group_type = 'user'
                 group_names = chap.user.name
                 group_check = False
-            
+
             if not group_check:
                 log.info(
                     f"Ignoring chapter {num_chap}, " \
@@ -538,11 +529,7 @@ class MangaChapter:
         )
 
     def _parse_volumes_from_chapter(self, chapter):
-        if not isinstance(chapter, Chapter):
-            chap = Chapter(chapter)
-        else:
-            chap = chapter
-
+        chap = chapter if isinstance(chapter, Chapter) else Chapter(chapter)
         # "api.mangadex.org/{manga-id}/aggregate" data for self._parse_volumes
         aggregate_data = {
             "volumes": {
@@ -607,11 +594,7 @@ class MangaChapter:
             chapters = []
 
             # As far as i know, if volumes are in list, the list only have 1 data
-            if isinstance(data, list):
-                value = data[0]
-            else:
-                value = data[str(volume)]
-
+            value = data[0] if isinstance(data, list) else data[str(volume)]
             # Retrieving chapters
             c = value.get('chapters')
 

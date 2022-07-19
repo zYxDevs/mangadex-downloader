@@ -28,4 +28,6 @@ def get_format(fmt):
     try:
         return formats[fmt]
     except KeyError:
-        raise InvalidFormat("invalid save_as format, available are: %s" % set(formats.keys()))
+        raise InvalidFormat(
+            f"invalid save_as format, available are: {set(formats.keys())}"
+        )
