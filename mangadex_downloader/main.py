@@ -224,24 +224,28 @@ def fetch(url, language=Language.English, use_alt_details=False, unsafe=False):
     elif isinstance(language, str):
         lang = get_language(language).value
     else:
-        raise ValueError("language must be Language or str, not %s" % language.__class__.__name__)
-    log.info("Using %s language" % Language(lang).name)
+        raise ValueError(
+            f"language must be Language or str, not {language.__class__.__name__}"
+        )
+
+    log.info(f"Using {Language(lang).name} language")
 
     log.debug('Validating the url...')
     try:
         manga_id = validate_url(url)
     except InvalidURL as e:
-        log.error('%s is not valid mangadex url' % url)
+        log.error(f'{url} is not valid mangadex url')
         raise e from None
-    
+
     # Begin fetching
-    log.info('Fetching manga %s' % manga_id)
+    log.info(f'Fetching manga {manga_id}')
     manga = _fetch_manga(manga_id, lang, use_alt_details=use_alt_details)
 
     if (
-        manga.content_rating == ContentRating.Pornographic or
-        manga.content_rating == ContentRating.Erotica
-    ) and not unsafe:
+        manga.content_rating
+        in [ContentRating.Pornographic, ContentRating.Erotica]
+        and not unsafe
+    ):
         raise NotAllowed(f"You are not allowed to see \"{manga.title}\"")
 
     log.info("Found manga \"%s\"" % manga.title)
@@ -334,20 +338,26 @@ def download(
     """
     # Validate start_chapter and end_chapter param
     if start_chapter is not None and not isinstance(start_chapter, float):
-        raise ValueError("start_chapter must be float, not %s" % type(start_chapter))
+        raise ValueError(f"start_chapter must be float, not {type(start_chapter)}")
     if end_chapter is not None and not isinstance(end_chapter, float):
-        raise ValueError("end_chapter must be float, not %s" % type(end_chapter))
+        raise ValueError(f"end_chapter must be float, not {type(end_chapter)}")
 
-    if start_chapter is not None and end_chapter is not None:
-        if start_chapter > end_chapter:
-            raise ValueError("start_chapter cannot be more than end_chapter")
+    if (
+        start_chapter is not None
+        and end_chapter is not None
+        and start_chapter > end_chapter
+    ):
+        raise ValueError("start_chapter cannot be more than end_chapter")
 
-    if start_page is not None and end_page is not None:
-        if start_page > end_page:
-            raise ValueError("start_page cannot be more than end_page")
+    if (
+        start_page is not None
+        and end_page is not None
+        and start_page > end_page
+    ):
+        raise ValueError("start_page cannot be more than end_page")
 
     if cover not in valid_cover_types:
-        raise ValueError("invalid cover type, available are: %s" % valid_cover_types)
+        raise ValueError(f"invalid cover type, available are: {valid_cover_types}")
 
     if group and group.lower().strip() == "all" and no_group_name:
         raise ValueError("no_group_name cannot be True while group is used")
@@ -358,7 +368,10 @@ def download(
     elif isinstance(language, str):
         lang = get_language(language)
     else:
-        raise ValueError("language must be Language or str, not %s" % language.__class__.__name__)
+        raise ValueError(
+            f"language must be Language or str, not {language.__class__.__name__}"
+        )
+
 
     log.info(f"Using {lang.name} language")
 
@@ -366,7 +379,7 @@ def download(
     try:
         manga_id = validate_url(url)
     except InvalidURL as e:
-        log.error('%s is not valid mangadex url' % url)
+        log.error(f'{url} is not valid mangadex url')
         raise e from None
 
     # Validate group
@@ -375,15 +388,17 @@ def download(
     # Validation save as format
     fmt_class = get_format(save_as)
 
-    if not isinstance(url, Manga):
-        manga = Manga(_id=manga_id, use_alt_details=use_alt_details)
-    else:
-        manga = url
+    manga = (
+        url
+        if isinstance(url, Manga)
+        else Manga(_id=manga_id, use_alt_details=use_alt_details)
+    )
 
     if (
-        manga.content_rating == ContentRating.Pornographic or
-        manga.content_rating == ContentRating.Erotica
-    ) and not unsafe:
+        manga.content_rating
+        in [ContentRating.Pornographic, ContentRating.Erotica]
+        and not unsafe
+    ):
         raise NotAllowed(f"You are not allowed to see \"{manga.title}\"")
 
     # base path
@@ -393,14 +408,14 @@ def download(
     if folder:
         base_path /= folder
     base_path /= sanitize_filename(manga.title)
-    
+
     # Create folder
     log.debug("Creating folder for downloading")
     base_path.mkdir(parents=True, exist_ok=True)
 
     # Cover path
     cover_path = base_path / 'cover.jpg'
-    log.info('Downloading cover manga %s' % manga.title)
+    log.info(f'Downloading cover manga {manga.title}')
 
     # Determine cover art quality
     if cover == "original":
@@ -433,7 +448,7 @@ def download(
             "_range": _range
         }
 
-        log.info("Using %s format" % save_as)
+        log.info(f"Using {save_as} format")
 
         fmt = fmt_class(
             path,
@@ -474,7 +489,7 @@ def download(
             download_manga(new_manga, new_path)
 
             log.info(f"Download finished for manga {manga.title} in {translated_lang.name} language")
-        
+
     else:
         # I really want to use _fetch_manga()
         # but it would waste 1 http request
@@ -483,7 +498,7 @@ def download(
         manga._chapters = MangaChapter(manga, lang.value, all_chapters=True)
 
         download_manga(manga, base_path)
-                
+
     log.info("Download finished for manga \"%s\"" % manga.title)
     return manga
 
@@ -538,13 +553,16 @@ def download_chapter(
     """
     # Validate start_page and end_page param
     if start_page is not None and not isinstance(start_page, int):
-        raise ValueError("start_page must be int, not %s" % type(start_page))
+        raise ValueError(f"start_page must be int, not {type(start_page)}")
     if end_page is not None and not isinstance(end_page, int):
-        raise ValueError("end_page must be int, not %s" % type(end_page))
+        raise ValueError(f"end_page must be int, not {type(end_page)}")
 
-    if start_page is not None and end_page is not None:
-        if start_page > end_page:
-            raise ValueError("start_page cannot be more than end_page")
+    if (
+        start_page is not None
+        and end_page is not None
+        and start_page > end_page
+    ):
+        raise ValueError("start_page cannot be more than end_page")
 
     fmt_class = get_format(save_as)
 
@@ -552,15 +570,16 @@ def download_chapter(
     try:
         chap_id = validate_url(url)
     except InvalidURL as e:
-        log.error('%s is not valid mangadex url' % url)
+        log.error(f'{url} is not valid mangadex url')
         raise e from None
 
     # Fetch manga
     chap, manga = _get_manga_from_chapter(chap_id)
     if (
-        manga.content_rating == ContentRating.Pornographic or
-        manga.content_rating == ContentRating.Erotica
-    ) and not unsafe:
+        manga.content_rating
+        in [ContentRating.Pornographic, ContentRating.Erotica]
+        and not unsafe
+    ):
         raise NotAllowed(f"You are not allowed to see \"{manga.title}\"")
 
     log.info("Found chapter %s from manga \"%s\"" % (chap.chapter, manga.title))
@@ -572,7 +591,7 @@ def download_chapter(
     if folder:
         base_path /= folder
     base_path /= sanitize_filename(manga.title)
-    
+
     # Create folder
     log.debug("Creating folder for downloading")
     base_path.mkdir(parents=True, exist_ok=True)
@@ -586,7 +605,7 @@ def download_chapter(
         "use_chapter_title": use_chapter_title
     }
 
-    log.info("Using %s format" % save_as)
+    log.info(f"Using {save_as} format")
 
     fmt = fmt_class(
         base_path,
@@ -651,7 +670,7 @@ def download_list(
     try:
         list_id = validate_url(url)
     except InvalidURL as e:
-        log.error('%s is not valid mangadex url' % url)
+        log.error(f'{url} is not valid mangadex url')
         raise e from None
 
     _list = MangaDexList(_id=list_id)
@@ -682,13 +701,12 @@ def download_legacy_manga(url, *args, **kwargs):
     try:
         legacy_id = validate_legacy_url(url)
     except InvalidURL as e:
-        log.error('%s is not valid mangadex url' % url)
+        log.error(f'{url} is not valid mangadex url')
         raise e from None
 
     new_id = get_legacy_id('manga', legacy_id)
 
-    manga = download(new_id, *args, **kwargs)
-    return manga
+    return download(new_id, *args, **kwargs)
 
 def download_legacy_chapter(url, *args, **kwargs):
     """Download chapter from old MangaDex url
@@ -699,10 +717,9 @@ def download_legacy_chapter(url, *args, **kwargs):
     try:
         legacy_id = validate_legacy_url(url)
     except InvalidURL as e:
-        log.error('%s is not valid mangadex url' % url)
+        log.error(f'{url} is not valid mangadex url')
         raise e from None
 
     new_id = get_legacy_id('chapter', legacy_id)
 
-    manga = download_chapter(new_id, *args, **kwargs)
-    return manga
+    return download_chapter(new_id, *args, **kwargs)

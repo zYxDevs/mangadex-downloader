@@ -114,7 +114,7 @@ class PDFPlugin:
                     # It is a single frame image
                     pass
             numberOfPages += im_numberOfPages
-            for i in range(im_numberOfPages):
+            for _ in range(im_numberOfPages):
                 image_refs.append(existing_pdf.next_object_id(0))
                 page_refs.append(existing_pdf.next_object_id(0))
                 contents_refs.append(existing_pdf.next_object_id(0))
@@ -131,12 +131,10 @@ class PDFPlugin:
             if isinstance(orig_img, _ChapterMarkImage):
                 mark_img = orig_img.func(*orig_img.args)
                 imSequence = mark_img.convert("RGB")
-                imSequence.encoderinfo = orig_img.encoderinfo.copy()
             else:
                 # Convert image to RGB
                 imSequence = orig_img.convert('RGB')
-                imSequence.encoderinfo = orig_img.encoderinfo.copy()
-
+            imSequence.encoderinfo = orig_img.encoderinfo.copy()
             im_pages = ImageSequence.Iterator(imSequence) if save_all else [imSequence]
             for im in im_pages:
                 # FIXME: Should replace ASCIIHexDecode with RunLengthDecode
@@ -244,7 +242,7 @@ class PDFPlugin:
 
                 self.tqdm.update(1)
                 pageNumber += 1
-            
+
             # Close image to save memory
             if not isinstance(orig_img, _ChapterMarkImage):
                 orig_img.close()
@@ -292,13 +290,13 @@ class PDF(BaseFormat):
             count = NumberWithLeadingZeros(0)
 
             # Fetching chapter images
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
-            pdf_file = base_path / (chap_name + '.pdf')
+            pdf_file = base_path / f'{chap_name}.pdf'
             def pdf_file_exists(converting=False):
                 if replace and not converting:
                     try:
@@ -323,9 +321,7 @@ class PDF(BaseFormat):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (
-                        chap_extended_name, page
-                    ))
+                    log.info(f'Downloading {chap_extended_name} page {page}')
 
                     # Verify file
                     if self.verify and not replace:
@@ -362,10 +358,10 @@ class PDF(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
@@ -373,7 +369,7 @@ class PDF(BaseFormat):
                         count.increase()
                         imgs.append(Image.open(img_path))
                         continue
-                
+
                 if not error:
                     break
 
@@ -388,9 +384,10 @@ class PDF(BaseFormat):
                 im.save(
                     pdf_file,
                     save_all=True,
-                    append=True if pdf_file_exists(True) else False,
-                    append_images=imgs
+                    append=bool(pdf_file_exists(True)),
+                    append_images=imgs,
                 )
+
 
                 # Close PDF convert progress bar
                 pdf_plugin.close_progress_bar()
@@ -427,13 +424,14 @@ class PDFSingle(PDF):
         for chap_class, images in manga.chapters.iter(**self.kwargs_iter):
             item = [chap_class, images]
             cache.append(item)
-        
+
         # Construct pdf filename from first and last chapter
         first_chapter = cache[0][0]
-        last_chapter = cache[len(cache) - 1][0]
+        last_chapter = cache[-1][0]
         pdf_name = sanitize_filename(
-            first_chapter.simple_name + " - " + last_chapter.simple_name + '.pdf'
+            f"{first_chapter.simple_name} - {last_chapter.simple_name}.pdf"
         )
+
         pdf_file = base_path / pdf_name
 
         def pdf_file_exists(converting=False):
@@ -453,10 +451,10 @@ class PDFSingle(PDF):
             chap = chap_class.chapter
             chap_name = chap_class.name
 
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             # Create volume folder
@@ -480,8 +478,8 @@ class PDFSingle(PDF):
                     img_ext = os.path.splitext(img_name)[1]
                     img_name = count.get() + img_ext
                     img_path = chapter_path / img_name
-                    
-                    log.info('Downloading %s page %s' % (chap_name, page))
+
+                    log.info(f'Downloading {chap_name} page {page}')
 
                     # Verify file
                     if self.verify and not replace:
@@ -518,10 +516,10 @@ class PDFSingle(PDF):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
@@ -529,7 +527,7 @@ class PDFSingle(PDF):
                         count.increase()
                         imgs.append(Image.open(img_path))
                         continue
-                
+
                 if not error:
                     break
 
@@ -546,9 +544,10 @@ class PDFSingle(PDF):
             im.save(
                 pdf_file,
                 save_all=True,
-                append=True if pdf_file_exists(True) else False,
-                append_images=imgs
+                append=bool(pdf_file_exists(True)),
+                append_images=imgs,
             )
+
 
             # Close PDF convert progress bar
             pdf_plugin.close_progress_bar()
@@ -592,12 +591,8 @@ class PDFVolume(PDF):
             count = NumberWithLeadingZeros(0)
 
             # Build volume folder name
-            if volume is not None:
-                vol_name = f'Vol. {volume}'
-            else:
-                vol_name = 'No Volume'
-
-            pdf_name = vol_name + '.pdf'
+            vol_name = f'Vol. {volume}' if volume is not None else 'No Volume'
+            pdf_name = f'{vol_name}.pdf'
             pdf_file = base_path / pdf_name
 
             def pdf_file_exists(converting=False):
@@ -618,10 +613,10 @@ class PDFVolume(PDF):
                 chap = chap_class.chapter
                 chap_name = chap_class.name
 
-                log.info('Getting %s from chapter %s' % (
-                    'compressed images' if compressed_image else 'images',
-                    chap
-                ))
+                log.info(
+                    f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                )
+
                 images.fetch()
 
                 # Create volume folder
@@ -645,8 +640,8 @@ class PDFVolume(PDF):
                         img_ext = os.path.splitext(img_name)[1]
                         img_name = count.get() + img_ext
                         img_path = volume_path / img_name
-                        
-                        log.info('Downloading %s page %s' % (chap_name, page))
+
+                        log.info(f'Downloading {chap_name} page {page}')
 
                         # Verify file
                         if self.verify and not replace:
@@ -683,10 +678,10 @@ class PDFVolume(PDF):
                         # Fetch the new one, and start re-downloading
                         if not success:
                             log.error('One of MangaDex network are having problem, re-fetching the images...')
-                            log.info('Getting %s from chapter %s' % (
-                                'compressed images' if compressed_image else 'images',
-                                chap
-                            ))
+                            log.info(
+                                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                            )
+
                             error = True
                             images.fetch()
                             break
@@ -694,7 +689,7 @@ class PDFVolume(PDF):
                             count.increase()
                             imgs.append(Image.open(img_path))
                             continue
-                    
+
                     if not error:
                         break
 
@@ -711,9 +706,10 @@ class PDFVolume(PDF):
                 im.save(
                     pdf_file,
                     save_all=True,
-                    append=True if pdf_file_exists(True) else False,
-                    append_images=imgs
+                    append=bool(pdf_file_exists(True)),
+                    append_images=imgs,
                 )
+
 
                 # Close PDF convert progress bar
                 pdf_plugin.close_progress_bar()

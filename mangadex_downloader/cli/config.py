@@ -26,12 +26,8 @@ def build_config_from_url_arg(parser, urls):
 
         val = url.strip()
         # Just ignore it if empty lines
-        if not val:
+        if not val or val and not val.startswith('conf'):
             continue
-        # Invalid config
-        elif not val.startswith('conf'):
-            continue
-
         # Initial value splitted into "key_conf=value_conf"
         value = val.split(':')
 
@@ -59,7 +55,7 @@ def build_config_from_url_arg(parser, urls):
                 print(f"Successfully reset config '{conf_value}'")
             else:
                 # Reset all configs
-                print(f"Successfully reset all configs")
+                print("Successfully reset all configs")
 
             continue
 

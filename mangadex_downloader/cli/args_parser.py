@@ -24,15 +24,7 @@ def _check_args(opts, args):
     
     Used in :class:`InputHandler`
     """
-    for opt in opts:
-        if opt not in args:
-            continue
-        else:
-            # original or alias options is exist in args
-            return True
-    
-    # not exist
-    return False
+    return any(opt in args for opt in opts)
 
 def validate_group_url(url):
     try:
@@ -51,18 +43,18 @@ class ListLanguagesAction(argparse.Action):
         text = "List of available languages"
         print(text)
         print(dynamic_bars(len(text)))
-        
+
         for lang in Language:
             if lang == Language.Other:
                 # Need special treatment
                 continue
-            
+
             print(f"{lang.name} / {lang.value}")
-        
+
         # Value of Language.Other is None
         # And we don't want that to showed up in screen
         print(f"{Language.Other.name}")
-        
+
         sys.exit(0)
 
 
@@ -174,11 +166,8 @@ class InputHandler(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         urls = self.pipe_value if self.pipe else values
 
-        file_exist = False
         file_path = Path(urls)
-        if file_path.exists() and file_path.is_file():
-            file_exist = True
-
+        file_exist = bool(file_path.exists() and file_path.is_file())
         fetch_library_manga = urls.startswith('library')
         fetch_library_list = urls.startswith('list')
         fetch_library_follows_list = urls.startswith('followed-list')
@@ -205,7 +194,7 @@ class InputHandler(argparse.Action):
 
         if fetch_library_manga:
             result = urls.split(':')
-            
+
             # Try to get filter status
             try:
                 status = result[1]
@@ -213,15 +202,12 @@ class InputHandler(argparse.Action):
                 status = None
             else:
                 status = status.strip()
-            
+
             if status == 'help':
                 text = "List of statuses filter for user library manga"
 
                 # Build dynamic bar
-                bars = ""
-                for _ in text:
-                    bars += "="
-
+                bars = "".join("=" for _ in text)
                 print(bars)
                 print(text)
                 print(bars)

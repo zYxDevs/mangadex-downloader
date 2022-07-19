@@ -13,11 +13,7 @@ default_cover_type = "original"
 
 class CoverArt:
     def __init__(self, cover_id=None, data=None):
-        if not data:
-            self.data = get_cover_art(cover_id)['data']
-        else:
-            self.data = data
-
+        self.data = data or get_cover_art(cover_id)['data']
         self.id = self.data['id']
         attr = self.data['attributes']
 

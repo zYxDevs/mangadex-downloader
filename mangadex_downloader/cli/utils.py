@@ -97,7 +97,7 @@ class Paginator:
         self._pos += 1
     
     def previous(self):
-        if (self._pos - 1) < 0:
+        if self._pos < 1:
             raise IndexError
 
         self._pos -= 1
@@ -116,8 +116,4 @@ def print_version_info():
     print(f"bundled executable: {bundled_executable}")
 
 def dynamic_bars(length):
-    bar = ""
-    for _ in range(length):
-        bar += "="
-    
-    return bar
+    return "".join("=" for _ in range(length))

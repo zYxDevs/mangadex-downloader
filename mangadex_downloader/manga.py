@@ -22,11 +22,7 @@ class Manga:
         if _id and data:
             raise ValueError("_id and data cannot be together")
 
-        if _id:
-            self._data = get_manga(_id)['data']
-        else:
-            self._data = data
-
+        self._data = get_manga(_id)['data'] if _id else data
         # Append some additional informations
         rels = self._data['relationships']
         authors = []
@@ -83,7 +79,7 @@ class Manga:
         for count, data in enumerate(alt_titles, start=1):
             for alt_title in data.values():
                 choices[str(count)] = alt_title
-        
+
         # Append the original title
         count += 1
         choices[str(count)] = get_local_attr(title)
@@ -94,13 +90,13 @@ class Manga:
             for count, data in enumerate(alt_titles, start=1):
                 for lang, alt_title in data.items():
                     language = get_details_language(lang)
-                    print('(%s). [%s]: %s' % (count, language.name, alt_title))
-            
+                    print(f'({count}). [{language.name}]: {alt_title}')
+
             # Append the original title
             count += 1
             for lang, orig_title in title.items():
                 language = get_details_language(lang)
-                print('(%s). [%s]: %s' % (count, language.name, orig_title))
+                print(f'({count}). [{language.name}]: {orig_title}')
 
         print_choices()
 
@@ -125,23 +121,23 @@ class Manga:
         # The manga has no description
         if not description:
             return ""
-        
+
         # The manga has only 1 description
         if len(description) <= 1:
             return get_local_attr(description)
-        
+
         # Append choices for user input
         choices = {}
         for count, desc in enumerate(description.values(), start=1):
             choices[str(count)] = desc
-        
+
         print("Manga \"%s\" has alternative descriptions, please choose one" % self._orig_title)
 
         def print_choices():
             count = 1
             for lang, desc in description.items():
                 language = get_details_language(lang)
-                print('(%s). [%s]: %s' % (count, language.name, (desc[:90] + '...')))
+                print(f'({count}). [{language.name}]: {desc[:90]}...')
                 count += 1
 
         print_choices()

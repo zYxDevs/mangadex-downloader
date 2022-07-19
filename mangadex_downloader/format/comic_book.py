@@ -38,15 +38,15 @@ class ComicBookArchive(BaseFormat):
             chap_extended_name = chap_class.get_name()
 
             # Fetching chapter images
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             chapter_path = create_chapter_folder(base_path, chap_name)
 
-            chapter_zip_path = base_path / (chap_name + '.cbz')
+            chapter_zip_path = base_path / f'{chap_name}.cbz'
             if chapter_zip_path.exists() and replace:
                 delete_file(chapter_zip_path)
 
@@ -69,7 +69,7 @@ class ComicBookArchive(BaseFormat):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (chap_extended_name, page))
+                    log.info(f'Downloading {chap_extended_name} page {page}')
 
                     # Verify file
                     # Make sure zipfile is opened in append mode
@@ -112,29 +112,29 @@ class ComicBookArchive(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
                     else:
                         # Write it to zipfile
                         wrap = lambda: chapter_zip.writestr(img_name, img_path.read_bytes())
-                        
+
                         # KeyboardInterrupt safe
                         worker.submit(wrap)
-                        
+
                         # And then remove it original file
                         delete_file(img_path)
 
                         count.increase()
                         continue
-                
+
                 if not error:
                     break
-            
+
             # Remove original chapter folder
             shutil.rmtree(chapter_path, ignore_errors=True)
 
@@ -145,7 +145,7 @@ class ComicBookArchiveVolume(BaseFormat):
     def __init__(self, *args, **kwargs):
         if not pillow_ready:
             raise PillowNotInstalled("pillow is not installed")
-        
+
         super().__init__(*args, **kwargs)
 
     def main(self):
@@ -192,7 +192,7 @@ class ComicBookArchiveVolume(BaseFormat):
             # Create volume folder
             volume_path = create_chapter_folder(base_path, volume)
 
-            volume_zip_path = base_path / (volume + '.cbz')
+            volume_zip_path = base_path / f'{volume}.cbz'
             volume_zip = zipfile.ZipFile(
                 str(volume_zip_path),
                 "a" if path_exists(volume_zip_path) else "w"
@@ -203,7 +203,7 @@ class ComicBookArchiveVolume(BaseFormat):
                 chap_name = chap_class.get_name()
 
                 # Insert "start of the chapter" image
-                img_name = count.get() + '.png'
+                img_name = f'{count.get()}.png'
 
                 # Make sure we never duplicated it
                 write_start_image = False
@@ -211,7 +211,7 @@ class ComicBookArchiveVolume(BaseFormat):
                     volume_zip.getinfo(img_name)
                 except KeyError:
                     write_start_image = True
-                
+
                 if write_start_image:
                     img = get_mark_image(chap_class)
                     fp = io.BytesIO()
@@ -222,10 +222,10 @@ class ComicBookArchiveVolume(BaseFormat):
                 count.increase()
 
                 # Fetching chapter images
-                log.info('Getting %s from chapter %s' % (
-                    'compressed images' if compressed_image else 'images',
-                    chap
-                ))
+                log.info(
+                    f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                )
+
                 images.fetch()
 
                 while True:
@@ -238,7 +238,7 @@ class ComicBookArchiveVolume(BaseFormat):
 
                         img_path = volume_path / img_name
 
-                        log.info('Downloading %s page %s' % (chap_name, page))
+                        log.info(f'Downloading {chap_name} page {page}')
 
                         # Verify file
                         # Make sure zipfile is opened in append mode
@@ -281,29 +281,29 @@ class ComicBookArchiveVolume(BaseFormat):
                         # Fetch the new one, and start re-downloading
                         if not success:
                             log.error('One of MangaDex network are having problem, re-fetching the images...')
-                            log.info('Getting %s from chapter %s' % (
-                                'compressed images' if compressed_image else 'images',
-                                chap
-                            ))
+                            log.info(
+                                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                            )
+
                             error = True
                             images.fetch()
                             break
                         else:
                             # Write it to zipfile
                             wrap = lambda: volume_zip.writestr(img_name, img_path.read_bytes())
-                            
+
                             # KeyboardInterrupt safe
                             worker.submit(wrap)
-                            
+
                             # And then remove it original file
                             delete_file(img_path)
 
                             count.increase()
                             continue
-                    
+
                     if not error:
                         break
-                
+
             # Remove original chapter folder
             shutil.rmtree(volume_path, ignore_errors=True)
 
@@ -314,7 +314,7 @@ class ComicBookArchiveSingle(BaseFormat):
     def __init__(self, *args, **kwargs):
         if not pillow_ready:
             raise PillowNotInstalled("pillow is not installed")
-        
+
         super().__init__(*args, **kwargs)
 
     def main(self):
@@ -348,10 +348,11 @@ class ComicBookArchiveSingle(BaseFormat):
 
         # Construct .cbz filename from first and last chapter
         first_chapter = cache[0][0]
-        last_chapter = cache[len(cache) - 1][0]
+        last_chapter = cache[-1][0]
         manga_zip_path = base_path / sanitize_filename(
-            first_chapter.simple_name + " - " + last_chapter.simple_name + '.cbz'
+            f"{first_chapter.simple_name} - {last_chapter.simple_name}.cbz"
         )
+
         manga_zip = zipfile.ZipFile(
             str(manga_zip_path),
             "a" if path_exists(manga_zip_path) else "w"
@@ -359,7 +360,7 @@ class ComicBookArchiveSingle(BaseFormat):
 
         for chap_class, images in cache:
             # Insert "start of the chapter" image
-            img_name = count.get() + '.png'
+            img_name = f'{count.get()}.png'
 
             # Make sure we never duplicated it
             write_start_image = False
@@ -367,7 +368,7 @@ class ComicBookArchiveSingle(BaseFormat):
                 manga_zip.getinfo(img_name)
             except KeyError:
                 write_start_image = True
-            
+
             if write_start_image:
                 img = get_mark_image(chap_class)
                 fp = io.BytesIO()
@@ -381,10 +382,10 @@ class ComicBookArchiveSingle(BaseFormat):
             chap = chap_class.chapter
             chap_name = chap_class.name
 
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             chapter_path = create_chapter_folder(base_path, chap_name)
@@ -399,7 +400,7 @@ class ComicBookArchiveSingle(BaseFormat):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (chap_name, page))
+                    log.info(f'Downloading {chap_name} page {page}')
 
                     # Verify file
                     # Make sure zipfile is opened in append mode
@@ -442,26 +443,26 @@ class ComicBookArchiveSingle(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
                     else:
                         # Write it to zipfile
                         wrap = lambda: manga_zip.writestr(img_name, img_path.read_bytes())
-                        
+
                         # KeyboardInterrupt safe
                         worker.submit(wrap)
-                        
+
                         # And then remove it original file
                         delete_file(img_path)
 
                         count.increase()
                         continue
-                
+
                 if not error:
                     break            
 

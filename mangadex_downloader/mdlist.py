@@ -28,7 +28,7 @@ class MangaDexList:
         count = 0
         for rel in rels:
             _type = rel['type']
-            
+
             if _type == "manga":
                 count += 1
 

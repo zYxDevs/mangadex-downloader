@@ -3,11 +3,7 @@ from .utils import get_local_attr
 
 class Group:
     def __init__(self, group_id=None, data=None):
-        if not data:
-            self.data = get_group(group_id)['data']
-        else:
-            self.data = data
-
+        self.data = data or get_group(group_id)['data']
         self.id = self.data['id']
         attr = self.data['attributes']
 

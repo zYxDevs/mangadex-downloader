@@ -49,13 +49,10 @@ def get_legacy_id(_type, _id):
 
         # Get the new id
         url = validate_url(location_url)
-    else:
-        # 200 status code, the legacy id is not exist.
-        # Raise error based on type url
-        if _type == 'title':
-            raise InvalidManga('Manga \"%s\" cannot be found' % _id)
-        elif _type == 'chapter':
-            raise ChapterNotFound("Chapter %s cannot be found" % _id)
+    elif _type == 'title':
+        raise InvalidManga('Manga \"%s\" cannot be found' % _id)
+    elif _type == 'chapter':
+        raise ChapterNotFound(f"Chapter {_id} cannot be found")
 
     return url
 
@@ -86,14 +83,14 @@ def get_chapter(chapter_id):
     }
     r = Net.mangadex.get(url, params=params)
     if r.status_code == 404:
-        raise ChapterNotFound("Chapter %s cannot be found" % chapter_id)
+        raise ChapterNotFound(f"Chapter {chapter_id} cannot be found")
     return r.json()
 
 def get_list(list_id):
     url = '{0}/list/{1}'.format(base_url, list_id)
     r = Net.mangadex.get(url)
     if r.status_code == 404:
-        raise InvalidMangaDexList("List %s cannot be found" % list_id)
+        raise InvalidMangaDexList(f"List {list_id} cannot be found")
     return r.json()
 
 @lru_cache(maxsize=1048)

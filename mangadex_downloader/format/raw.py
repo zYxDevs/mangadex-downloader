@@ -35,10 +35,10 @@ class Raw(BaseFormat):
             chap_extended_name = chap_class.get_name()
 
             # Fetching chapter images
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             chapter_path = create_chapter_folder(base_path, chap_name)
@@ -57,10 +57,7 @@ class Raw(BaseFormat):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (
-                        chap_extended_name,
-                        page
-                    ))
+                    log.info(f'Downloading {chap_extended_name} page {page}')
 
                     # Verify file
                     if self.verify and not replace:
@@ -96,17 +93,17 @@ class Raw(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
                     else:
                         count.increase()
                         continue
-                
+
                 if not error:
                     break
 
@@ -114,7 +111,7 @@ class RawVolume(BaseFormat):
     def __init__(self, *args, **kwargs):
         if not pillow_ready:
             raise PillowNotInstalled("pillow is not installed")
-        
+
         super().__init__(*args, **kwargs)
 
     def main(self):
@@ -162,16 +159,16 @@ class RawVolume(BaseFormat):
                     volume = 'No Volume'
 
                 # Fetching chapter images
-                log.info('Getting %s from chapter %s' % (
-                    'compressed images' if compressed_image else 'images',
-                    chap
-                ))
+                log.info(
+                    f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                )
+
                 images.fetch()
 
                 chapter_path = create_chapter_folder(base_path, volume)
 
                 # Insert "start of the chapter" image
-                img_name = count.get() + '.png'
+                img_name = f'{count.get()}.png'
                 img_path = chapter_path / img_name
                 img = get_mark_image(chap_class)
                 img.save(img_path, 'png')
@@ -188,8 +185,8 @@ class RawVolume(BaseFormat):
 
                         img_path = chapter_path / img_name
 
-                        log.info('Downloading %s page %s' % (chap_name, page))
-    
+                        log.info(f'Downloading {chap_name} page {page}')
+
                         # Verify file
                         if self.verify and not replace:
                             # Can be True, False, or None
@@ -224,17 +221,17 @@ class RawVolume(BaseFormat):
                         # Fetch the new one, and start re-downloading
                         if not success:
                             log.error('One of MangaDex network are having problem, re-fetching the images...')
-                            log.info('Getting %s from chapter %s' % (
-                                'compressed images' if compressed_image else 'images',
-                                chap
-                            ))
+                            log.info(
+                                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                            )
+
                             error = True
                             images.fetch()
                             break
                         else:
                             count.increase()
                             continue
-                    
+
                     if not error:
                         break
 
@@ -242,7 +239,7 @@ class RawSingle(BaseFormat):
     def __init__(self, *args, **kwargs):
         if not pillow_ready:
             raise PillowNotInstalled("pillow is not installed")
-        
+
         super().__init__(*args, **kwargs)
 
     def main(self):
@@ -276,25 +273,28 @@ class RawSingle(BaseFormat):
 
         # Construct folder name from first and last chapter
         first_chapter = cache[0][0]
-        last_chapter = cache[len(cache) - 1][0]
-        path = base_path / sanitize_filename(first_chapter.simple_name + " - " + last_chapter.simple_name)
+        last_chapter = cache[-1][0]
+        path = base_path / sanitize_filename(
+            f"{first_chapter.simple_name} - {last_chapter.simple_name}"
+        )
+
         path.mkdir(exist_ok=True)
 
-        for index, (chap_class, images) in enumerate(cache):
-            start = True
+        start = True
 
+        for chap_class, images in cache:
             # Group name will be placed inside the start and end of chapter images
             chap = chap_class.chapter
             chap_name = chap_class.name
 
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             # Insert "start of the chapter" image
-            img_name = count.get() + '.png'
+            img_name = f'{count.get()}.png'
             img_path = path / img_name
             img = get_mark_image(chap_class)
             img.save(img_path, 'png')
@@ -311,7 +311,7 @@ class RawSingle(BaseFormat):
 
                     img_path = path / img_name
 
-                    log.info('Downloading %s page %s' % (chap_name, page))
+                    log.info(f'Downloading {chap_name} page {page}')
 
                     # Verify file
                     if self.verify and not replace:
@@ -347,16 +347,14 @@ class RawSingle(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
                     else:
                         count.increase()
-                        continue
-                
                 if not error:
                     break

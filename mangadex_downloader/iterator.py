@@ -100,9 +100,7 @@ class IteratorManga(BaseIterator):
         ]
 
         if self.unsafe:
-            content_ratings.append('erotica')
-            content_ratings.append('pornographic')
-
+            content_ratings.extend(('erotica', 'pornographic'))
         params = {
             'includes[]': includes,
             'title': self.title,
@@ -115,7 +113,7 @@ class IteratorManga(BaseIterator):
         data = r.json()
 
         items = data['data']
-        
+
         for item in items:
             self.queue.put(Manga(data=item))
 
@@ -143,16 +141,13 @@ class IteratorUserLibraryManga(BaseIterator):
 
         self.status = status
 
-        lib = {}
-        for stat in self.statuses:
-            lib[stat] = []
+        lib = {stat: [] for stat in self.statuses}
         self.library = lib
 
-        logged_in = Net.mangadex.check_login()
-        if not logged_in:
+        if logged_in := Net.mangadex.check_login():
+            self._parse_reading_status()
+        else:
             raise NotLoggedIn("Retrieving user library require login")
-
-        self._parse_reading_status()
 
     def _parse_reading_status(self):
         r = Net.mangadex.get(f'{base_url}/manga/status')
@@ -172,17 +167,17 @@ class IteratorUserLibraryManga(BaseIterator):
         while True:
             manga = self.queue.get_nowait()
 
-            if not self.unsafe and (
-                manga.content_rating == ContentRating.Pornographic or
-                manga.content_rating == ContentRating.Erotica
-            ):
+            if not self.unsafe and manga.content_rating in [
+                ContentRating.Pornographic,
+                ContentRating.Erotica,
+            ]:
                 # YOU SHALL NOT PASS
                 continue
 
             if not self._check_status(manga):
                 # Filter is used
                 continue
-            
+
             return manga
 
     def fill_data(self):
@@ -202,7 +197,7 @@ class IteratorUserLibraryManga(BaseIterator):
 
         for item in items:
             self.queue.put(Manga(data=item))
-        
+
         self.offset += len(items)
 
 class IteratorMangaFromList(BaseIterator):
@@ -226,13 +221,9 @@ class IteratorMangaFromList(BaseIterator):
         self._parse_list()
 
     def _parse_list(self):
-        if self.id:
-            data = get_list(self.id)['data']
-        else:
-            data = self.data
-
+        data = get_list(self.id)['data'] if self.id else self.data
         self.name = data['attributes']['name']
-        
+
         for rel in data['relationships']:
             _type = rel['type']
             _id = rel['id']
@@ -244,11 +235,11 @@ class IteratorMangaFromList(BaseIterator):
     def next(self) -> Manga:
         while True:
             manga = self.queue.get_nowait()
-            
-            if not self.unsafe and (
-                manga.content_rating == ContentRating.Pornographic or
-                manga.content_rating == ContentRating.Erotica
-            ):
+
+            if not self.unsafe and manga.content_rating in [
+                ContentRating.Pornographic,
+                ContentRating.Erotica,
+            ]:
                 # No unsafe ?
                 # No way
                 continue
@@ -256,7 +247,11 @@ class IteratorMangaFromList(BaseIterator):
             return manga
     
     def fill_data(self):
-        ids = self.manga_ids
+        if not (ids := self.manga_ids):
+            return
+        limit = self.limit
+        param_ids = ids[:limit]
+        del ids[:len(param_ids)]
         includes = ['author', 'artist', 'cover_art']
         content_ratings = [
             'safe',
@@ -265,33 +260,29 @@ class IteratorMangaFromList(BaseIterator):
             'pornographic' # Filter porn content will be done in next()
         ]
 
-        limit = self.limit
-        if ids:
-            param_ids = ids[:limit]
-            del ids[:len(param_ids)]
-            params = {
-                'includes[]': includes,
-                'limit': limit,
-                'contentRating[]': content_ratings,
-                'ids[]': param_ids
-            }
-            url = f'{base_url}/manga'
-            r = Net.mangadex.get(url, params=params)
-            data = r.json()
+        params = {
+            'includes[]': includes,
+            'limit': limit,
+            'contentRating[]': content_ratings,
+            'ids[]': param_ids
+        }
+        url = f'{base_url}/manga'
+        r = Net.mangadex.get(url, params=params)
+        data = r.json()
 
-            notexist_ids = param_ids.copy()
-            copy_data = data.copy()
-            for manga_data in copy_data['data']:
-                manga = Manga(data=manga_data)
-                if manga.id in notexist_ids:
-                    notexist_ids.remove(manga.id)
-            
-            if notexist_ids:
-                for manga_id in notexist_ids:
-                    log.warning(f'There is ghost (not exist) manga = {manga_id} in list {self.name}')
+        notexist_ids = param_ids.copy()
+        copy_data = data.copy()
+        for manga_data in copy_data['data']:
+            manga = Manga(data=manga_data)
+            if manga.id in notexist_ids:
+                notexist_ids.remove(manga.id)
 
-            for manga_data in data['data']:
-                self.queue.put(Manga(data=manga_data))
+        if notexist_ids:
+            for manga_id in notexist_ids:
+                log.warning(f'There is ghost (not exist) manga = {manga_id} in list {self.name}')
+
+        for manga_data in data['data']:
+            self.queue.put(Manga(data=manga_data))
 
 class IteratorUserLibraryList(BaseIterator):
     def __init__(self):
@@ -320,7 +311,7 @@ class IteratorUserLibraryList(BaseIterator):
 
         for item in items:
             self.queue.put(MangaDexList(data=item))
-        
+
         self.offset += len(items)
 
 class IteratorUserList(BaseIterator):
@@ -337,7 +328,7 @@ class IteratorUserList(BaseIterator):
         params = {
             'limit': self.limit,
             'offset': self.offset,
-            
+
         }
         url = f'{base_url}/user/{self.user.id}/list'
         try:
@@ -362,7 +353,7 @@ class IteratorUserList(BaseIterator):
 
         for item in items:
             self.queue.put(MangaDexList(data=item))
-        
+
         self.offset += len(items)
 
 class IteratorUserLibraryFollowsList(BaseIterator):
@@ -391,5 +382,5 @@ class IteratorUserLibraryFollowsList(BaseIterator):
 
         for item in items:
             self.queue.put(MangaDexList(data=item))
-        
+
         self.offset += len(items)

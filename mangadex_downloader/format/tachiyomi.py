@@ -30,10 +30,10 @@ class Tachiyomi(BaseFormat):
             chap_extended_name = chap_class.get_name()
 
             # Fetching chapter images
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             chapter_path = create_chapter_folder(base_path, chap_name)
@@ -52,9 +52,7 @@ class Tachiyomi(BaseFormat):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (
-                        chap_extended_name, page
-                    ))
+                    log.info(f'Downloading {chap_extended_name} page {page}')
 
                     # Verify file
                     if self.verify and not replace:
@@ -90,17 +88,17 @@ class Tachiyomi(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
                     else:
                         count.increase()
                         continue
-                
+
                 if not error:
                     break
 
@@ -124,15 +122,15 @@ class TachiyomiZip(BaseFormat):
             chap_extended_name = chap_class.get_name()
 
             # Fetching chapter images
-            log.info('Getting %s from chapter %s' % (
-                'compressed images' if compressed_image else 'images',
-                chap
-            ))
+            log.info(
+                f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+            )
+
             images.fetch()
 
             chapter_path = create_chapter_folder(base_path, chap_name)
 
-            chapter_zip_path = base_path / (chap_name + '.zip')
+            chapter_zip_path = base_path / f'{chap_name}.zip'
             if chapter_zip_path.exists() and replace:
                 delete_file(chapter_zip_path)
 
@@ -155,9 +153,7 @@ class TachiyomiZip(BaseFormat):
 
                     img_path = chapter_path / img_name
 
-                    log.info('Downloading %s page %s' % (
-                        chap_extended_name, page
-                    ))
+                    log.info(f'Downloading {chap_extended_name} page {page}')
 
                     # Verify file
                     # Make sure zipfile is opened in append mode
@@ -200,29 +196,29 @@ class TachiyomiZip(BaseFormat):
                     # Fetch the new one, and start re-downloading
                     if not success:
                         log.error('One of MangaDex network are having problem, re-fetching the images...')
-                        log.info('Getting %s from chapter %s' % (
-                            'compressed images' if compressed_image else 'images',
-                            chap
-                        ))
+                        log.info(
+                            f"Getting {'compressed images' if compressed_image else 'images'} from chapter {chap}"
+                        )
+
                         error = True
                         images.fetch()
                         break
                     else:
                         # Write it to zipfile
                         wrap = lambda: chapter_zip.writestr(img_name, img_path.read_bytes())
-                        
+
                         # KeyboardInterrupt safe
                         worker.submit(wrap)
-                        
+
                         # And then remove it original file
                         delete_file(img_path)
-                        
+
                         count.increase()
                         continue
-                
+
                 if not error:
                     break
-            
+
             # Remove original chapter folder
             shutil.rmtree(chapter_path, ignore_errors=True)
 

@@ -2,13 +2,9 @@ from .fetcher import get_author
 
 class _Base:
     def __init__(self, _id=None, data=None):
-        if not data:
-            self.data = get_author(_id)['data']
-        else:
-            self.data = data
-
+        self.data = data or get_author(_id)['data']
         self.id = self.data['id']
-        
+
         attr = self.data['attributes']
 
         # Name

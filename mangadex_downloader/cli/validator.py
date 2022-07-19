@@ -34,14 +34,7 @@ def validate_url(url):
     else:
         content = url
 
-    urls = []
-    for _url in content.splitlines():
-        if not _url:
-            continue
-
-        urls.append((_validate(_url), _url))
-    
-    return urls
+    return [(_validate(_url), _url) for _url in content.splitlines() if _url]
 
 def _create_prompt_choices(
     parser,
@@ -78,7 +71,7 @@ def _create_prompt_choices(
                     items.append(next(iterator))
                 except StopIteration:
                     break
-            
+
             if items:
                 paginator.add_page(*items)
 
@@ -99,13 +92,13 @@ def _create_prompt_choices(
             dynamic_bar = ""
             for _ in range(len(text)):
                 dynamic_bar += "="
-            
+
             print(dynamic_bar)
             print(text)
             print(dynamic_bar)
 
             paginator.print()
-            
+
             print("")
 
             print("type \"next\" to show next results")
@@ -150,7 +143,7 @@ def _create_prompt_choices(
 
                     previous = True
                 break
-        
+
         if _next:
             paginator.next()
             fetch = True
@@ -164,25 +157,14 @@ def _create_prompt_choices(
             continue
         else:
             break
-    
+
     return item
 
 def preview_list(args, mdlist):
-    cache = []
-    for manga in mdlist.iter_manga(args.unsafe):
-        cache.append(manga)
-
-    len_manga_titles = []
-    # Grab the longest title to determine length bar
-    for manga in cache:
-        len_manga_titles.append(len(manga.title))
-    
+    cache = list(mdlist.iter_manga(args.unsafe))
+    len_manga_titles = [len(manga.title) for manga in cache]
     # List is empty
-    if not len_manga_titles:
-        length_bar = 0
-    else:
-        length_bar = max(len_manga_titles)
-
+    length_bar = max(len_manga_titles, default=0)
     print('\n')
     print(f'List of mangas from MangaDex list \"{mdlist.name}\"')
     print(dynamic_bars(length_bar))
@@ -210,7 +192,7 @@ def validate(parser, args):
                 file_path += file.pop(0)
             except IndexError:
                 err_file = True
-            
+
             if not file_path:
                 err_file = True
 
@@ -220,8 +202,8 @@ def validate(parser, args):
             # Because ":" was removed during .split()
             # add it again
             for f in file:
-                file_path += ':' + f
-            
+                file_path += f':{f}'
+
             # Because this is specified syntax for batch downloading
             # If file doesn't exist, raise error
             if not os.path.exists(file_path):
@@ -245,7 +227,7 @@ def validate(parser, args):
         on_preview = None
     elif args.fetch_library_manga:
         result = urls.split(':')
-        
+
         # Try to get filter status
         try:
             status = result[1]
@@ -256,7 +238,7 @@ def validate(parser, args):
             iterator = get_manga_from_user_library(status, args.unsafe)
         except MangaDexException as e:
             parser.error(str(e))
-        
+
         user = Net.mangadex.user
         text = f"Manga library from user \"{user.name}\""
         on_empty_err = f"User \"{user.name}\" has no saved mangas"
@@ -289,18 +271,19 @@ def validate(parser, args):
             iterator = get_followed_list_from_user_library()
         except MangaDexException as e:
             parser.error(str(e))
-        
+
         user = Net.mangadex.user
         text = f"MangaDex followed List from user \"{user.name}\""
         on_empty_err = f"User \"{user.name}\" has no followed lists"
         on_preview = lambda x: preview_list(args, x)
 
-    kwargs.update({
+    kwargs |= {
         'iterator': iterator,
         'text': text,
         'on_empty_err': on_empty_err,
-        'on_preview': on_preview
-    })
+        'on_preview': on_preview,
+    }
+
 
     result = _create_prompt_choices(**kwargs)
 
@@ -309,19 +292,16 @@ def validate(parser, args):
 def build_url(parser, args):
     validate(parser, args)
 
+    urls = []
     if args.type:
-        urls = []
         for parsed_url, orig_url in args.URL:
             url = build_URL_from_type(args.type, parsed_url)
             urls.append(url)
-        args.URL = urls
     else:
-        urls = []
         for parsed_url, orig_url in args.URL:
             url = smart_select_url(orig_url)
             urls.append(url)
-        args.URL = urls
-
+    args.URL = urls
     # Make sure to check if args.URL is empty
     # if empty exit the program
     if not args.URL:
